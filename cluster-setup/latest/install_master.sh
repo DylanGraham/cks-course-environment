@@ -4,21 +4,20 @@
 
 set -e
 
-KUBE_VERSION=1.22.2
-
+KUBE_VERSION=1.23.4
 
 ### setup terminal
 apt-get update
 apt-get install -y bash-completion binutils
-echo 'colorscheme ron' >> ~/.vimrc
-echo 'set tabstop=2' >> ~/.vimrc
-echo 'set shiftwidth=2' >> ~/.vimrc
-echo 'set expandtab' >> ~/.vimrc
-echo 'source <(kubectl completion bash)' >> ~/.bashrc
-echo 'alias k=kubectl' >> ~/.bashrc
-echo 'alias c=clear' >> ~/.bashrc
-echo 'complete -F __start_kubectl k' >> ~/.bashrc
-sed -i '1s/^/force_color_prompt=yes\n/' ~/.bashrc
+echo 'colorscheme ron' >> /root/.vimrc
+echo 'set tabstop=2' >> /root/.vimrc
+echo 'set shiftwidth=2' >> /root/.vimrc
+echo 'set expandtab' >> /root/.vimrc
+echo 'source <(kubectl completion bash)' >> /root/.bashrc
+echo 'alias k=kubectl' >> /root/.bashrc
+echo 'alias c=clear' >> /root/.bashrc
+echo 'complete -F __start_kubectl k' >> /root/.bashrc
+sed -i '1s/^/force_color_prompt=yes\n/' /root/.bashrc
 
 
 ### disable linux swap and remove any existing swap partitions
@@ -136,8 +135,8 @@ systemctl enable kubelet && systemctl start kubelet
 rm /root/.kube/config || true
 kubeadm init --kubernetes-version=${KUBE_VERSION} --ignore-preflight-errors=NumCPU --skip-token-print
 
-mkdir -p ~/.kube
-sudo cp -i /etc/kubernetes/admin.conf ~/.kube/config
+mkdir -p /root/.kube
+sudo cp -i /etc/kubernetes/admin.conf /root/.kube/config
 
 # workaround because https://github.com/weaveworks/weave/issues/3927
 # kubectl apply -f "https://cloud.weave.works/k8s/net?k8s-version=$(kubectl version | base64 | tr -d '\n')"
@@ -150,7 +149,7 @@ apt-mark unhold kubelet kubeadm kubectl kubernetes-cni
 
 
 # etcdctl
-ETCDCTL_VERSION=v3.5.1
+ETCDCTL_VERSION=v3.5.2
 ETCDCTL_VERSION_FULL=etcd-${ETCDCTL_VERSION}-linux-amd64
 wget https://github.com/etcd-io/etcd/releases/download/${ETCDCTL_VERSION}/${ETCDCTL_VERSION_FULL}.tar.gz
 tar xzf ${ETCDCTL_VERSION_FULL}.tar.gz
