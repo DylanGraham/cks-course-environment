@@ -5,6 +5,7 @@
 set -e
 
 KUBE_VERSION=1.23.4
+HELM_VERSION=3.8.0
 
 ### setup terminal
 apt-get update
@@ -155,6 +156,21 @@ wget https://github.com/etcd-io/etcd/releases/download/${ETCDCTL_VERSION}/${ETCD
 tar xzf ${ETCDCTL_VERSION_FULL}.tar.gz
 mv ${ETCDCTL_VERSION_FULL}/etcdctl /usr/bin/
 rm -rf ${ETCDCTL_VERSION_FULL} ${ETCDCTL_VERSION_FULL}.tar.gz
+
+# Install Helm
+wget https://get.helm.sh/helm-v${HELM_VERSION}-linux-amd64.tar.gz
+tar xf helm-v${HELM_VERSION}-linux-amd64.tar.gz
+install linux-amd64/helm /usr/local/bin
+rm -rf linux-amd64 helm-v${HELM_VERSION}-linux-amd64.tar.gz
+
+# Install Cilium
+helm repo add cilium https://helm.cilium.io/
+helm install cilium cilium/cilium --version 1.11.1 --namespace kube-system
+
+curl -L --remote-name-all https://github.com/cilium/cilium-cli/releases/latest/download/cilium-linux-amd64.tar.gz{,.sha256sum}
+sha256sum --check cilium-linux-amd64.tar.gz.sha256sum
+tar xzvfC cilium-linux-amd64.tar.gz /usr/local/bin
+rm cilium-linux-amd64.tar.gz{,.sha256sum}
 
 echo
 echo "### COMMAND TO ADD A WORKER NODE ###"
