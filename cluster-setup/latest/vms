@@ -1,0 +1,87 @@
+#!/usr/bin/env bash
+
+function create {
+    ZONE=$1
+    IMAGE="ubuntu-1804-bionic-v20211214"
+
+    for node in master worker; do
+        gcloud compute instances create cks-$node \
+            --zone "${ZONE}" \
+            --machine-type=e2-medium \
+            --image="${IMAGE}" \
+            --image-project=ubuntu-os-cloud \
+            --boot-disk-size=50GB \
+            --preemptible 2>&1 | grep "RUNNING"
+    done
+
+    printf "\nWaiting for nodes to be ready...\n"
+    node_ready
+    while [[ $? -ne 0 ]]; do
+        node_ready
+    done
+
+    printf "\nSetting up k8s on worker node...\n"
+    gcloud compute ssh root@cks-worker \
+            --command="bash <(curl -s https://raw.githubusercontent.com/DylanGraham/cks-course-environment/master/cluster-setup/latest/install_worker.sh)" &> /dev/null &
+
+    printf "\nSetting up k8s on master node...\n"
+    JOIN_COMMAND=$(gcloud compute ssh root@cks-master \
+            --command="bash <(curl -s https://raw.githubusercontent.com/DylanGraham/cks-course-environment/master/cluster-setup/latest/install_master.sh)" 2>&1 | grep "discovery-token-ca-cert-hash")
+
+    printf "\nAdding worker node to cluster...\n"
+    gcloud compute ssh root@cks-worker --command="$JOIN_COMMAND" &> /dev/null
+
+    printf "\nShowing nodes in cluster...\n"
+    gcloud compute ssh root@cks-master --command="kubectl get nodes"
+}
+
+function node_ready {
+    sleep 5
+    gcloud compute ssh root@cks-worker --command="sleep 1" &> /dev/null
+}
+
+function start {
+    gcloud compute instances start $1 --async
+}
+
+function stop {
+    gcloud compute instances stop $1 --async
+}
+
+function delete {
+    gcloud compute instances delete --quiet $1
+}
+
+function usage {
+    echo "Usage: vms [create] [start] [stop] [delete] [list]"
+}
+
+case "${1}" in
+    create)
+        create "australia-southeast1-a"
+        ;;
+
+    start)
+        start cks-master
+        start cks-worker
+        ;;
+
+    stop)
+        stop cks-worker
+        stop cks-master
+        ;;
+
+    delete)
+        delete cks-worker
+        delete cks-master
+        ;;
+
+    list)
+        gcloud compute instances list
+        ;;
+
+    *)
+        usage
+        ;;
+esac
+
